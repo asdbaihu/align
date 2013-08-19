@@ -30,21 +30,20 @@ int main(int argc, char **argv)
     io::align table;
     io::align_proxy s(table.attach(cout));
 
-    while (cin.good())
+    while (cin.good() && cout.good())
     {
         string line;
         getline(cin, line);
         line.push_back('\0');
 
         if (!line.empty() && line[0] == ';') {
-            table.reset_heads(&line[1]);
+            s << io::heads << io::raw(&line[1]) << io::endr;
         }
-
-        if (line.size() >= 2 && line[0] == '-' && line[1] == '-') {
+        else if (line.size() >= 2 && line[0] == '-' && line[1] == '-') {
             s << io::hline;
         }
         else {
-            s << io::row(line) << endl;
+            s << io::raw(line) << io::endr;
         }
     }
     return 0;

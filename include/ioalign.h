@@ -24,28 +24,79 @@
 #include <string>
 #include <ios>
 
+/// Namespace for io::align.
 namespace io
 {
-    template<typename Align>
-    class basic_align_proxy;
-
+    /// Main class: holds the alignment state across stream output operations.
     template<typename OStream>
     class basic_align;
 
+    /// Output proxy: interfaces between basic_align and the output stream.
+    template<typename Align>
+    class basic_align_proxy;
+
+    /** @brief Manipulator that emits a horizontal rule using the full table width.
+     *
+     * For example:
+     *
+     *     proxy << io::hline;
+     *
+     * An horizontal rule first ends the current row, then also prepares a new row.
+     */
     template<typename OStream>
     OStream& hline(OStream& os);
 
+    /** @brief Manipulator that ends the current row.
+     *
+     * For example:
+     *
+     *     proxy << io::endr;
+     */
+    template<typename OStream>
+    OStream& endr(OStream& os);
+
+    /** @brief Manipulator that moves output to the next column, adding padding as necessary.
+     *
+     * For example:
+     *
+     *     proxy << "hello" << io::tab << "world" << io::endr;
+     */
     template<typename OStream>
     OStream& tab(OStream& os);
 
-    template<typename Char>
-    struct row_;
+    /** @brief Manipulator that marks the next column outputs as headers.
+     *
+     * For example:
+     *
+     *     proxy << io::heads << "first" << io::tab << "second" << io::endr;
+     */
+    template<typename OStream>
+    OStream& heads(OStream& os);
 
-    template<typename Char>
-    row_<Char> row(const Char *s);
 
+    /// @cond hidden
+    template<typename Char>
+    struct raw_;
+    /// @endcond
+
+    /** @brief Manipulator that feeds a C string and interprets tab and newline characters.
+     *
+     * For example:
+     *
+     *     proxy << io::raw("hello\tworld\n");
+     */
+    template<typename Char>
+    raw_<Char> raw(const Char *s);
+
+    /** @brief Manipulator that feeds a standard string and interprets tab and newline characters.
+     *
+     * For example:
+     *
+     *     std::string s = "hello\tworld\n";
+     *     proxy << io::raw(s);
+     */
     template<typename Char, typename Traits>
-    row_<Char> row(const std::basic_string<Char, Traits>& s);
+    raw_<Char> raw(const std::basic_string<Char, Traits>& s);
 
     template<typename Align>
     class basic_align_proxy {
@@ -53,12 +104,16 @@ namespace io
         typedef typename Align::stream_type     stream_type;
         typedef typename Align::char_type       char_type;
 
+        /// Forwards an output operation to the proxied stream directly.
         template<typename T>
         basic_align_proxy& operator<<(const T& t);
 
+        /// Applies a manipulator and detects hline, tab and endr.
         basic_align_proxy& operator<<(stream_type& (*op)(stream_type&));
 
-        basic_align_proxy& operator<<(const row_<char_type>& r);
+        /// Feeds a character string to basic_align::output_raw.
+        basic_align_proxy& operator<<(const raw_<char_type>& r);
+
     private:
         stream_type& os_;
         Align&       a_;
@@ -82,7 +137,7 @@ namespace io
         attach(stream_type& os);
 
         void
-        output_row(stream_type& os, const char_type* r);
+        output_raw(stream_type& os, const char_type* r);
 
         void
         output_hline(stream_type& os);
@@ -91,13 +146,20 @@ namespace io
         output_tab(stream_type& os);
 
         void
-        reset_heads(const char_type* labels);
+        output_endr(stream_type& os);
+
+        void
+        reset_heads();
 
         basic_align();
     };
 
     typedef basic_align<std::ostream> align;
     typedef basic_align_proxy<align> align_proxy;
+
+
+    /// @cond IMPLEMENTATION
+
 
     template<typename OStream>
     OStream& hline(OStream& os)
@@ -111,21 +173,33 @@ namespace io
         return os << '\t';
     }
 
+    template<typename OStream>
+    OStream& endr(OStream& os)
+    {
+        return os << '\n';
+    }
+
+    template<typename OStream>
+    OStream& heads(OStream& os)
+    {
+        return os;
+    }
+
     template<typename Char>
-    struct row_ {
-        row_(const Char* s) : s_(s) {}
+    struct raw_ {
+        raw_(const Char* s) : s_(s) {}
         const Char* s_;
     };
 
     template<typename Char>
-    row_<Char> row(const Char *s)
+    raw_<Char> raw(const Char *s)
     {
-        return row_<Char>(s);
+        return raw_<Char>(s);
     }
     template<typename Char, typename Traits>
-    row_<Char> row(const std::basic_string<Char, Traits>& s)
+    raw_<Char> raw(const std::basic_string<Char, Traits>& s)
     {
-        return row_<Char>(s.c_str());
+        return raw_<Char>(s.c_str());
     }
 
     template<typename Align>
@@ -144,9 +218,9 @@ namespace io
 
     template<typename Align>
     basic_align_proxy<Align>&
-    basic_align_proxy<Align>::operator<<(const row_<typename Align::char_type>& r)
+    basic_align_proxy<Align>::operator<<(const raw_<typename Align::char_type>& r)
     {
-        a_.output_row(os_, r.s_);
+        a_.output_raw(os_, r.s_);
         return *this;
     }
 
@@ -158,6 +232,10 @@ namespace io
             a_.output_hline(os_);
         else if (manip == &tab<stream_type>)
             a_.output_tab(os_);
+        else if (manip == &endr<stream_type>)
+            a_.output_endr(os_);
+        else if (manip == &heads<stream_type>)
+            a_.reset_heads();
         else
             os_ << manip;
         return *this;
@@ -175,6 +253,9 @@ namespace io
     {
         // FIXME
     }
+
+    /// @endcond
+
 }
 
 #endif
