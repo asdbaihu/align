@@ -1,18 +1,18 @@
-===========
- io::table
-===========
+=======
+ Align
+=======
 
 Automatic column alignment for streamed tables
 ----------------------------------------------
 
-io::table is both a **C++ library** and a **command-line utility**.
+**Align** is both a **C++ library** and a **command-line utility**.
 
 - The C++ library **io::align** provides a simple interface to align
   columns in tabular output performed through a standard C++ stream (std::ostream).
 - The utility **align** reads tabular data, aligns columns, and writes the aligned table.
 
 Both tools perform alignment while *streaming*: alignment occurs
-line-by-line without buffering the entire table.
+line-by-line without buffering the entire table. The tool **align** is based on the library **io::align**.
 
 How to use io::align
 ====================
