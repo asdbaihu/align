@@ -21,25 +21,41 @@
 #include "ioalign.h"
 #include <string>
 #include <vector>
-#include <iostream>
+#include <fstream>
 
 using namespace std;
 
 int main(int argc, char **argv)
 {
-    io::align table;
-    io::align_proxy s(table.attach(cout));
+    ifstream din("/dev/stdin");
+    ofstream dout("/dev/stdout");
 
-    while (cin.good() && cout.good())
+    io::align table;
+    io::align_proxy s(table.attach(dout));
+
+    bool paginate = true;
+    int max_lines_per_page = 25;
+    int line_num = 0;
+
+    while (din.good() && dout.good())
     {
         string line;
-        getline(cin, line);
+        getline(din, line);
         line.push_back('\0');
 
+        line_num += 1;
+
         if (!line.empty() && line[0] == ';') {
-            s << io::heads << io::raw(&line[1]) << io::endr;
+            s << io::raw(line, true) << io::endr;
         }
-        else if (line.size() >= 2 && line[0] == '-' && line[1] == '-') {
+        else if (paginate && line_num >= max_lines_per_page)
+        {
+            s << ' ' << io::endr
+              << io::heads << io::hline;
+            line_num = 2;
+        }
+
+        if (line.size() >= 2 && line[0] == '-' && line[1] == '-') {
             s << io::hline;
         }
         else {
