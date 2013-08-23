@@ -25,7 +25,9 @@ How to use io::align
 2. include ``ioalign.h`` in your C++ code,
 3. use ``io::align`` on your C++ output streams.
 
-For example::
+For example:
+
+.. code:: c++
 
     #include "ioalign.h"
     #include <fstream>
