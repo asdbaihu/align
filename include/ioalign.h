@@ -42,9 +42,6 @@ namespace io
      * For example:
      *
      *     proxy << io::hline;
-     *
-     * basic_align_proxy::hline is called with default arguments,
-     * ie. it uses the caret '-' to produce the line.
      */
     template<typename A>
     basic_align_proxy<A>& hline(basic_align_proxy<A>& os);
@@ -77,6 +74,24 @@ namespace io
     template<typename A>
     basic_align_proxy<A>& tab(basic_align_proxy<A>& os);
 
+    /** @brief Manipulator that calls basic_align_proxy::resetheads.
+     *
+     * For example:
+     *
+     *     proxy << io::resetheads;
+     */
+    template<typename A>
+    basic_align_proxy<A>& resetheads(basic_align_proxy<A>& os);
+
+    /** @brief Manipulator that calls basic_align_proxy::reset.
+     *
+     * For example:
+     *
+     *     proxy << io::reset;
+     */
+    template<typename A>
+    basic_align_proxy<A>& reset(basic_align_proxy<A>& os);
+
     /// @cond hidden
     template<typename Char>
     class sethead_;
@@ -92,7 +107,7 @@ namespace io
      * minimum column width.
      */
     template<typename Char>
-    sethead_<Char> head(const Char* s, size_t width = 0);
+    sethead_<Char> head(const Char* s, unsigned width = 0);
 
     /** @brief Manipulator object to help call basic_align_proxy::sethead.
      *
@@ -103,10 +118,10 @@ namespace io
      *
      */
     template<typename Char, typename Traits>
-    sethead_<Char> head(const std::basic_string<Char, Traits>& s, size_t width = 0);
+    sethead_<Char> head(const std::basic_string<Char, Traits>& s, unsigned width = 0);
 
     /// @cond hidden
-    template<typename Char>
+    template<typename Char, bool heads>
     class raw_;
     /// @endcond
 
@@ -117,8 +132,8 @@ namespace io
      *     proxy << io::raw("hello\tworld\nsecond\trow");
      */
     template<typename Char>
-    raw_<Char> raw(const Char *s,
-                   bool first_row_defines_heads = false);
+    raw_<Char, false>
+    raw(const Char *s);
 
     /** @brief Manipulator object to help call basic_align_proxy::raw.
      *
@@ -127,10 +142,30 @@ namespace io
      *     std::string t = "hello\tworld\nsecond\trow";
      *     proxy << io::raw(t);
      */
-    template<typename Char>
     template<typename Char, typename Traits>
-    raw_<Char> raw(const std::basic_string<Char, Traits>& s,
-                   bool first_row_defines_heads = false);
+    raw_<Char, false>
+    raw(const std::basic_string<Char, Traits>& s);
+
+    /** @brief Manipulator object to help call basic_align_proxy::rawheads.
+     *
+     * For example:
+     *
+     *     proxy << io::rawheads("hello\tworld\nsecond\trow");
+     */
+    template<typename Char>
+    raw_<Char, true>
+    rawheads(const Char *s);
+
+    /** @brief Manipulator object to help call basic_align_proxy::rawheads.
+     *
+     * For example:
+     *
+     *     std::string t = "hello\tworld\nsecond\trow";
+     *     proxy << io::rawheads(t);
+     */
+    template<typename Char, typename Traits>
+    raw_<Char, true>
+    rawheads(const std::basic_string<Char, Traits>& s);
 
     template<typename Align>
     class basic_align_proxy {
@@ -138,44 +173,98 @@ namespace io
         typedef typename Align::stream_type     stream_type;
         typedef typename stream_type::char_type char_type;
         typedef typename stream_type::pos_type  pos_type;
+        typedef typename Align::string_type     string_type;
+        typedef typename string_type::size_type size_type;
 
         /** @brief Parse a C string and interpret tabs and newlines as table control.
          * @param cstr The nul-terminated C string to parse.
-         * @param first_row_heads Whether to treat the first row encountered as headers.
+         *
+         * For example:
+         *
+         *     p.raw("hello\tworld\n");
+         *
+         * Is equivalent to:
+         *
+         *     p << "hello" << io::tab << "world" << io::endr;
          */
         void
-        raw(const char_type* cstr, bool first_row_heads);
+        raw(const char_type* cstr);
 
+        /** @brief Parse a C string for column headers.
+         * @param cstr The nul-terminated C string to parse.
+         *
+         * For example:
+         *
+         *     p.rawheads("hello\tworld\n");
+         *
+         * Is equivalent to:
+         *
+         *     p << io::head("hello") << io::head("world") << io::endr;
+         */
         void
-        sethead(const char_type* h, size_t w, size_t len = 0);
+        rawheads(const char_type* cstr);
+
+        /** @brief Sets a column header title.
+         * @param cstr The C string to use.
+         * @param min_width The minimum column width, if desired.
+         * @param slen The limit on the size of the C string, if known.
+         *
+         * If `min_width` is zero, the minimum width is the size of the
+         * column title.  If `slen` is string_type::npos, the entire C string is
+         * used.
+         *
+         * @see basic_align_proxy::heads
+         */
+        void
+        sethead(const char_type* cstr, unsigned min_width = 0,
+                size_type slen = string_type::npos);
 
         /// Complete the row with column headers.
-        void
-        heads();
+        void heads();
 
         /// Complete the row with a horizontal rule.
-        void
-        hline(char_type line_char = '-');
+        void hline();
 
-        /// Complete the row with a horizontal rule.
-        void
-        tab(bool pad = true, char_type pad_char = ' ');
+        /// Tabulate to the next column.
+        void tab();
 
-        void
-        endr(bool reset_only = false);
+        /** @brief Complete the current row and start a new row.
+         * If the current row is empty, endr() has no effect.
+         */
+        void endr();
 
+        /// Reset the column widths and erase the column headers.
+        void reset();
+
+        /// Erase the column headers.
+        void resetheads();
+
+        /// Output a value to the attached stream.
         template<typename T>
         basic_align_proxy&
         operator<<(const T& t);
 
+        /// Call basic_align_proxy::sethead.
         basic_align_proxy&
         operator<<(const sethead_<char_type>& h);
 
+        /// Call basic_align_proxy::raw.
         basic_align_proxy&
-        operator<<(const raw_<char_type>& h);
+        operator<<(const raw_<char_type, false>& h);
 
+        /// Call basic_align_proxy::rawheads.
+        basic_align_proxy&
+        operator<<(const raw_<char_type, true>& h);
+
+        /// Destroy the proxy and release the attached stream.
         ~basic_align_proxy();
 
+        /// Set the column fill character.
+        void setfill(char_type fill = ' ');
+        /// Set the column separator character.
+        void setsep(char_type sep = ' ');
+        /// Set the horizontal rule character.
+        void setrule(char_type rule = '-');
     private:
         stream_type& os_;
         Align&       a_;
@@ -184,6 +273,9 @@ namespace io
         pos_type     last_pos_;
         bool         at_begin_;
         std::locale  prev_locale_;
+        char_type    fill_char_;
+        char_type    sep_char_;
+        char_type    rule_char_;
 
         template<typename O>
         friend class basic_align;
@@ -195,6 +287,18 @@ namespace io
         basic_align_proxy<A>&
         operator<<(basic_align_proxy<A>& s,
                    typename A::stream_type& (*op)(typename A::stream_type&));
+
+        unsigned
+        pre_tab();
+
+        void
+        complete_column();
+
+        void
+        complete_row();
+
+        bool
+        at_column_start();
     };
 
 
@@ -202,8 +306,11 @@ namespace io
     class basic_align
     {
     public:
-        typedef OStream                                              stream_type;
-        typedef basic_align_proxy<basic_align<OStream> >             proxy_type;
+        typedef OStream                                   stream_type;
+        typedef basic_align_proxy<basic_align<OStream> >  proxy_type;
+        typedef typename OStream::char_type               char_type;
+        typedef typename OStream::traits_type             traits_type;
+        typedef std::basic_string<char_type, traits_type> string_type;
 
         proxy_type
         attach(stream_type& os);
@@ -211,9 +318,8 @@ namespace io
         basic_align();
 
     private:
-        std::vector<int> widths_;
-        std::vector<std::basic_string<typename OStream::char_type,
-                                      typename OStream::traits_type> > heads_;
+        std::vector<int>         widths_;
+        std::vector<string_type> heads_;
 
         template<typename A>
         friend class basic_align_proxy;
@@ -225,14 +331,33 @@ namespace io
     /// @cond IMPLEMENTATION
 
     template<typename A>
-    void basic_align_proxy<A>::endr(bool reset_only)
+    bool basic_align_proxy<A>::at_column_start()
     {
         os_.flush();
-        bool skip_newline = at_begin_ && (cursor_ == last_pos_);
+        return cursor_ == last_pos_;
+    }
 
-        if (!reset_only && !skip_newline)
+    template<typename A>
+    void basic_align_proxy<A>::resetheads()
+    {
+        a_.heads_.clear();
+    }
+    template<typename A>
+    void basic_align_proxy<A>::reset()
+    {
+        resetheads();
+        a_.widths_.clear();
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::endr()
+    {
+        bool acs = at_column_start();
+        bool skip_newline = at_begin_ && acs;
+
+        if (!skip_newline)
         {
-            tab(false);
+            pre_tab();
             // for (int i = 0; i < a_.widths_.size(); ++i) fprintf(debug, ".%d", (int)a_.widths_[i]);
             os_ << '\n';
             os_.flush();
@@ -245,8 +370,8 @@ namespace io
     }
 
     template<typename A>
-    void basic_align_proxy<A>::tab(bool pad,
-                                   typename basic_align_proxy<A>::char_type pad_char)
+    unsigned
+    basic_align_proxy<A>::pre_tab()
     {
         // Ensure there is enough room in the
         // widths array for the current column.
@@ -254,7 +379,6 @@ namespace io
             a_.widths_.resize(col_ + 1);
 
         // See where we are in the stream.
-        os_.flush();
         pos_type cur_pos = cursor_;
         int w = cur_pos - last_pos_;
         if (w < 0)
@@ -263,64 +387,128 @@ namespace io
         // Adjust the current known width.
         int prev_w = a_.widths_[col_];
         if (w > prev_w)
-            a_.widths_[col_] = w;
+            a_.widths_[col_] = prev_w = w;
 
-        // Pad if necessary.
-        if (pad)
-        {
-            for (int i = 0; i < prev_w - w; ++i)
-                os_ << pad_char;
-            os_ << ' ';
-            os_.flush();
-        }
+        return prev_w - w;
+    }
+
+
+    template<typename A>
+    void basic_align_proxy<A>::complete_column()
+    {
+        unsigned remainder = pre_tab();
+
+        // Pad until end of column.
+        for (unsigned i = 0; i < remainder; ++i)
+            os_ << fill_char_;
+
+        // Separator.
+        os_ << sep_char_;
+
+        // Adjust column.
+        ++col_;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::complete_row()
+    {
+        // Complete the row.
+        os_ << '\n';
+
+        // Update cursor.
+        os_.flush();
+
+        // Start new row.
+        col_ = 0;
+        last_pos_ = cursor_;
+        at_begin_ = true;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::tab()
+    {
+        // Complete I/O, needed by complete_column().
+        os_.flush();
+
+        // Pad until end of column.
+        complete_column();
+
+        // Update cursor.
+        os_.flush();
 
         // Move the cursors forward.
-        ++col_;
         at_begin_ = false;
         last_pos_ = cursor_;
     }
 
     template<typename A>
-    void basic_align_proxy<A>::hline(char_type line_char)
+    void basic_align_proxy<A>::hline()
     {
-        for (unsigned i = col_; i < a_.widths_.size(); ++i)
-            tab(true, line_char);
-        os_ << '\n';
+        if (col_ + 1 < a_.widths_.size())
+        {
+            if (!at_column_start())
+                complete_column();
 
-        endr(true);
+            // Fill the remainder of the row with a rule.
+            for (unsigned i = col_; i < a_.widths_.size(); ++i)
+            {
+                for (unsigned j = 0; j < a_.widths_[i]; ++j)
+                    os_ << rule_char_;
+                if (i + 1 < a_.widths_.size())
+                    os_ << sep_char_;
+            }
+
+            complete_row();
+        }
+        else
+            endr();
     }
 
     template<typename A>
     void basic_align_proxy<A>::heads()
     {
-        // fprintf(debug, "HAI head:%s:%d:\n", a_.heads_[col_].c_str(), (int)a_.widths_[col_]);
-        for (unsigned i = col_; i < a_.heads_.size(); ++i)
+        if (col_ + 1 < a_.widths_.size())
         {
-            os_ << a_.heads_[i];
-            if (i < a_.heads_.size() - 1)
-                tab();
+            if (!at_column_start())
+                complete_column();
+
+            // Print out the headers.
+            for (unsigned i = col_; i < a_.heads_.size(); ++i)
+            {
+                os_ << a_.heads_[i];
+                if (i + 1 < a_.heads_.size())
+                {
+                    for (unsigned j = 0; j < a_.widths_[i] - a_.heads_[i].size(); ++j)
+                        os_ << fill_char_;
+                    os_ << sep_char_;
+                }
+            }
+            complete_row();
         }
-        endr();
+        else
+            endr();
     }
 
     template<typename A>
     void
     basic_align_proxy<A>::sethead(const typename basic_align_proxy<A>::char_type* s,
-                                  size_t w, size_t len)
+                                  unsigned w, size_type len)
     {
         // Place the label in the heads array.
         if (col_ >= a_.heads_.size())
             a_.heads_.resize(col_ + 1);
 
-        if (len != 0)
+        if (len != string_type::npos)
             a_.heads_[col_].assign(s, len);
         else
             a_.heads_[col_].assign(s);
 
+        size_type clen = w > a_.heads_[col_].size() ? w : a_.heads_[col_].size();
         // Now adjust the widths.
         if (col_ >= a_.widths_.size())
             a_.widths_.resize(col_ + 1);
-        a_.widths_[col_] = w > a_.heads_[col_].size() ? w : a_.heads_[col_].size();
+        if (clen > a_.widths_[col_])
+            a_.widths_[col_] = clen;
 
         // fprintf(debug, "HAI head:%s:%d:\n", a_.heads_[col_].c_str(), (int)a_.widths_[col_]);
 
@@ -330,50 +518,48 @@ namespace io
 
     template<typename A>
     void
-    basic_align_proxy<A>::raw(const typename basic_align_proxy<A>::char_type* s,
-                              bool fh)
+    basic_align_proxy<A>::rawheads(const typename basic_align_proxy<A>::char_type* s)
     {
-        size_t i, laststart;
-        bool firstrow = true;
+        size_type i, laststart;
 
         for (laststart = 0, i = 0; s[i] != '\0'; ++i)
         {
             if (s[i] != '\t' && s[i] != '\n')
                 continue;
 
-            if (i > laststart)
-            {
-                if (fh && firstrow)
-                    sethead(s + laststart, i - laststart, i - laststart);
-                else
-                    os_.write(s + laststart, i - laststart);
-            }
+            sethead(s + laststart, i - laststart, i - laststart);
 
-            if (fh && firstrow)
-            {
-                if (s[i] == '\n')
-                {
-                    endr();
-                    firstrow = false;
-                }
-            }
-            else
-            {
-                if (s[i] == '\t')
-                    tab();
-                else
-                    endr();
-            }
+            if (s[i] == '\n')
+                endr();
 
             laststart = i + 1;
         }
         if (i > laststart)
+            sethead(s + laststart, i - laststart, i - laststart);
+    }
+
+    template<typename A>
+    void
+    basic_align_proxy<A>::raw(const typename basic_align_proxy<A>::char_type* s)
+    {
+        size_type i, laststart;
+
+        for (laststart = 0, i = 0; s[i] != '\0'; ++i)
         {
-            if (fh && firstrow)
-                sethead(s + laststart, i - laststart, i - laststart);
+            if (s[i] != '\t' && s[i] != '\n')
+                continue;
+
+            os_.write(s + laststart, i - laststart);
+
+            if (s[i] == '\n')
+                endr();
             else
-                os_.write(s + laststart, i - laststart);
+                tab();
+
+            laststart = i + 1;
         }
+        if (i > laststart)
+            os_.write(s + laststart, i - laststart);
     }
 
     template<typename A>
@@ -402,6 +588,23 @@ namespace io
 
     template<typename A>
     inline basic_align_proxy<A>&
+    reset(basic_align_proxy<A>& os)
+    {
+        os.reset();
+        return os;
+    }
+
+    template<typename A>
+    inline basic_align_proxy<A>&
+    resetheads(basic_align_proxy<A>& os)
+    {
+        os.resetheads();
+        return os;
+    }
+
+
+    template<typename A>
+    inline basic_align_proxy<A>&
     heads(basic_align_proxy<A>& os)
     {
         os.heads();
@@ -411,24 +614,24 @@ namespace io
     template<typename Char>
     class sethead_ {
         const Char* s_;
-        size_t w_;
+        unsigned w_;
 
         template<typename A>
         friend class basic_align_proxy;
 
     public:
-        sethead_(const Char* s, size_t w) : s_(s), w_(w) {}
+        sethead_(const Char* s, unsigned w) : s_(s), w_(w) {}
     };
 
     template<typename Char>
     inline sethead_<Char>
-    head(const Char* s, size_t width)
+    head(const Char* s, unsigned width)
     {
         return sethead_<Char>(s, width);
     }
     template<typename Char, typename Traits>
     inline sethead_<Char>
-    head(const std::basic_string<Char, Traits>& s, size_t width)
+    head(const std::basic_string<Char, Traits>& s, unsigned width)
     {
         return sethead_<Char>(s.c_str(), width);
     }
@@ -442,36 +645,54 @@ namespace io
     }
 
 
-    template<typename Char>
+    template<typename Char, bool heads>
     class raw_ {
         const Char* s_;
-        bool has_heads_;
 
         template<typename A>
         friend class basic_align_proxy;
 
     public:
-        raw_(const Char* s, bool has_heads) : s_(s), has_heads_(has_heads) {}
+        raw_(const Char* s) : s_(s) {}
     };
 
     template<typename Char>
-    inline raw_<Char>
-    raw(const Char *s, bool has_heads)
+    inline raw_<Char, false>
+    raw(const Char *s)
     {
-        return raw_<Char>(s, has_heads);
+        return raw_<Char, false>(s);
     }
     template<typename Char, typename Traits>
-    inline raw_<Char>
-    raw(const std::basic_string<Char, Traits>& s, bool has_heads)
+    inline raw_<Char, false>
+    raw(const std::basic_string<Char, Traits>& s)
     {
-        return raw_<Char>(s.c_str(), has_heads);
+        return raw_<Char, false>(s.c_str());
+    }
+    template<typename Char>
+    inline raw_<Char, true>
+    rawheads(const Char *s)
+    {
+        return raw_<Char, true>(s);
+    }
+    template<typename Char, typename Traits>
+    inline raw_<Char, true>
+    rawheads(const std::basic_string<Char, Traits>& s)
+    {
+        return raw_<Char, true>(s.c_str());
     }
 
     template<typename A>
     inline basic_align_proxy<A>&
-    basic_align_proxy<A>::operator<<(const raw_<typename basic_align_proxy<A>::char_type>& r)
+    basic_align_proxy<A>::operator<<(const raw_<typename basic_align_proxy<A>::char_type, false>& r)
     {
-        raw(r.s_, r.has_heads_);
+        raw(r.s_);
+        return *this;
+    }
+    template<typename A>
+    inline basic_align_proxy<A>&
+    basic_align_proxy<A>::operator<<(const raw_<typename basic_align_proxy<A>::char_type, true>& r)
+    {
+        rawheads(r.s_);
         return *this;
     }
 
@@ -509,7 +730,10 @@ namespace io
           at_begin_(true),
           prev_locale_(os.imbue(std::locale(os.getloc(),
                                             new ocounter<pos_type, char_type,
-                                            typename stream_type::traits_type::state_type>(cursor_))))
+                                            typename stream_type::traits_type::state_type>(cursor_)))),
+          fill_char_(' '),
+          sep_char_(' '),
+          rule_char_('-')
     {
     }
 

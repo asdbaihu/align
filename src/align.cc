@@ -46,9 +46,8 @@ int main(int argc, char **argv)
         line_num += 1;
 
         if (!line.empty() && line[0] == ';') {
-            s << io::raw(line, true) << io::endr;
-        }
-        else if (paginate && line_num >= max_lines_per_page)
+            s << io::rawheads(line) << io::endr;
+        } else if (paginate && line_num >= max_lines_per_page)
         {
             s << ' ' << io::endr
               << io::heads << io::hline;

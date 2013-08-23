@@ -12,14 +12,17 @@ int main()
 
     s << "some" << io::tab << "data" << io::endr;
     s << "some" << io::tab << "longer" << io::tab << "third" << io::endr;
+    s << io::hline;
     s << "o" << io::tab << "hai" << io::endr;
     s << io::endr
       << io::endr;
     s << io::head("some long column") << io::head("short") << io::endr;
+    s << io::hline;
 
     s << "hi" << io::tab << "again" << io::tab << "stuff" << io::endr;
 
-    s << io::heads;
+    s << io::heads
+      << "some" << io::heads;
 
     s << io::endr
       << ' '
@@ -32,9 +35,10 @@ int main()
       << "oha3" << io::endr;
 
     s << io::raw("hello\tagain\n")
+      << io::reset
       << io::raw("hello\tagain\tthird") << io::endr
       << io::hline
-      << setw(10) << left << 123 << io::tab << hex << 456 << io::endr;
+      << 123 << io::tab << hex << 456 << io::endr;
     s << flush;
     return 0;
 }
