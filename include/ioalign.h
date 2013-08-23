@@ -37,19 +37,19 @@ namespace io
     template<typename Align>
     class basic_align_proxy;
 
-    /** @brief Manipulator that completes the row with a horizontal rule.
+    /** @brief Manipulator that calls basic_align_proxy::hline.
      *
      * For example:
      *
      *     proxy << io::hline;
      *
-     * This manipulator also terminates the row and prepares a new
-     * row.
+     * basic_align_proxy::hline is called with default arguments,
+     * ie. it uses the caret '-' to produce the line.
      */
     template<typename A>
     basic_align_proxy<A>& hline(basic_align_proxy<A>& os);
 
-    /** @brief Manipulator that terminates the current row.
+    /** @brief Manipulator that calls basic_align_proxy::endr.
      *
      * For example:
      *
@@ -58,20 +58,17 @@ namespace io
     template<typename A>
     basic_align_proxy<A>& endr(basic_align_proxy<A>& os);
 
-    /** @brief Manipulator that completes a row with headers.
+    /** @brief Manipulator that calls basic_align_proxy::heads.
      *
      * For example:
      *
      *     proxy << io::heads;
      *
-     * This manipulator also terminates the row and prepares a new
-     * row.
      */
     template<typename A>
     basic_align_proxy<A>& heads(basic_align_proxy<A>& os);
 
-    /** @brief Manipulator that moves output to the next column,
-     * adding padding as necessary.
+    /** @brief Manipulator that calls basic_align_proxy::tab.
      *
      * For example:
      *
@@ -85,7 +82,7 @@ namespace io
     class sethead_;
     /// @endcond
 
-    /** @brief Set a column header.
+    /** @brief Manipulator object to help call basic_align_proxy::sethead.
      *
      * For example:
      *
@@ -97,25 +94,40 @@ namespace io
     template<typename Char>
     sethead_<Char> head(const Char* s, size_t width = 0);
 
+    /** @brief Manipulator object to help call basic_align_proxy::sethead.
+     *
+     * For example:
+     *
+     *     std::string h = "first";
+     *     proxy << io::head(h, 10) << io::endr;
+     *
+     */
     template<typename Char, typename Traits>
-    sethead_<Char> head(const std::basic_string<Char, Traits>& s,
-                   size_t width = 0);
+    sethead_<Char> head(const std::basic_string<Char, Traits>& s, size_t width = 0);
 
     /// @cond hidden
     template<typename Char>
     class raw_;
     /// @endcond
 
-    /** @brief Feed a C string and interprets tab and newline characters.
+    /** @brief Manipulator object to help call basic_align_proxy::raw.
      *
      * For example:
      *
-     *     proxy << io::raw("hello\tworld\n");
+     *     proxy << io::raw("hello\tworld\nsecond\trow");
      */
     template<typename Char>
     raw_<Char> raw(const Char *s,
                    bool first_row_defines_heads = false);
 
+    /** @brief Manipulator object to help call basic_align_proxy::raw.
+     *
+     * For example:
+     *
+     *     std::string t = "hello\tworld\nsecond\trow";
+     *     proxy << io::raw(t);
+     */
+    template<typename Char>
     template<typename Char, typename Traits>
     raw_<Char> raw(const std::basic_string<Char, Traits>& s,
                    bool first_row_defines_heads = false);
@@ -127,18 +139,25 @@ namespace io
         typedef typename stream_type::char_type char_type;
         typedef typename stream_type::pos_type  pos_type;
 
+        /** @brief Parse a C string and interpret tabs and newlines as table control.
+         * @param cstr The nul-terminated C string to parse.
+         * @param first_row_heads Whether to treat the first row encountered as headers.
+         */
         void
-        raw(const char_type* r, bool first_row_heads);
+        raw(const char_type* cstr, bool first_row_heads);
 
         void
         sethead(const char_type* h, size_t w, size_t len = 0);
 
+        /// Complete the row with column headers.
         void
         heads();
 
+        /// Complete the row with a horizontal rule.
         void
-        hline();
+        hline(char_type line_char = '-');
 
+        /// Complete the row with a horizontal rule.
         void
         tab(bool pad = true, char_type pad_char = ' ');
 
@@ -262,10 +281,10 @@ namespace io
     }
 
     template<typename A>
-    void basic_align_proxy<A>::hline()
+    void basic_align_proxy<A>::hline(char_type line_char)
     {
         for (unsigned i = col_; i < a_.widths_.size(); ++i)
-            tab(true, '-');
+            tab(true, line_char);
         os_ << '\n';
 
         endr(true);
