@@ -338,10 +338,29 @@ namespace io
     }
 
     template<typename A>
+    void basic_align_proxy<A>::setfill(typename basic_align_proxy<A>::char_type fill_char)
+    {
+        fill_char_ = fill_char;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::setsep(typename basic_align_proxy<A>::char_type sep_char)
+    {
+        sep_char_ = sep_char;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::setrule(typename basic_align_proxy<A>::char_type rule_char)
+    {
+        rule_char_ = rule_char;
+    }
+
+    template<typename A>
     void basic_align_proxy<A>::resetheads()
     {
         a_.heads_.clear();
     }
+
     template<typename A>
     void basic_align_proxy<A>::reset()
     {

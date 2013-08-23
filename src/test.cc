@@ -19,6 +19,9 @@ int main()
     s << io::head("some long column") << io::head("short") << io::endr;
     s << io::hline;
 
+    s.setfill('*');
+    s.setsep('|');
+    s.setrule('=');
     s << "hi" << io::tab << "again" << io::tab << "stuff" << io::endr;
 
     s << io::heads
