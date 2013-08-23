@@ -11,6 +11,8 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign subdir-objects silent-rules])
 AM_SILENT_RULES([yes])
 
+DX_INIT_DOXYGEN([ioalign], [ioalign.doxygen], [doc])
+
 AC_PROG_CXX
 
 if test "x$GXX" = xyes; then
