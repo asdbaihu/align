@@ -8,6 +8,8 @@ mod11_SOURCES = src/mod11.cc
 
 pkginclude_HEADERS = include/ioalign.h
 
+dist_doc_DATA = README.rst
+
 AM_CPPFLAGS = -I$(srcdir)/include
 ACLOCAL_AMFLAGS = -I build-aux
 
