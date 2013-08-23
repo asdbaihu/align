@@ -74,6 +74,15 @@ namespace io
     template<typename A>
     basic_align_proxy<A>& tab(basic_align_proxy<A>& os);
 
+    /** @brief Manipulator that calls basic_align_proxy::next.
+     *
+     * For example:
+     *
+     *     proxy << "hello" << io::next << "world" << io::next;
+     */
+    template<typename A>
+    basic_align_proxy<A>& next(basic_align_proxy<A>& os);
+
     /** @brief Manipulator that calls basic_align_proxy::resetheads.
      *
      * For example:
@@ -228,6 +237,9 @@ namespace io
         /// Tabulate to the next column.
         void tab();
 
+        /// Tabulate to the next column if any, otherwise next row.
+        void next();
+
         /** @brief Complete the current row and start a new row.
          * If the current row is empty, endr() has no effect.
          */
@@ -377,7 +389,6 @@ namespace io
         if (!skip_newline)
         {
             pre_tab();
-            // for (int i = 0; i < a_.widths_.size(); ++i) fprintf(debug, ".%d", (int)a_.widths_[i]);
             os_ << '\n';
             os_.flush();
         }
@@ -458,6 +469,15 @@ namespace io
         // Move the cursors forward.
         at_begin_ = false;
         last_pos_ = cursor_;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::next()
+    {
+        if (col_ + 1 < a_.widths_.size())
+            tab();
+        else
+            endr();
     }
 
     template<typename A>
@@ -602,6 +622,14 @@ namespace io
     tab(basic_align_proxy<A>& os)
     {
         os.tab();
+        return os;
+    }
+
+    template<typename A>
+    inline basic_align_proxy<A>&
+    next(basic_align_proxy<A>& os)
+    {
+        os.next();
         return os;
     }
 
