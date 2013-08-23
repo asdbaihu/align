@@ -5,7 +5,7 @@
 # This software is released under the terms of the MIT license.
 # See the accompanying file 'LICENSE' for more information.
 #
-AC_INIT([align], [1.x], [kena@vodka-pomme.net])
+AC_INIT([align], m4_esyscmd([git describe --abbrev=4 | cut -c2- | tr -d '\n']), [kena@vodka-pomme.net])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([1.11 foreign subdir-objects silent-rules])
