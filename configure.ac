@@ -13,6 +13,8 @@ AM_SILENT_RULES([yes])
 
 DX_INIT_DOXYGEN([ioalign], [ioalign.doxygen], [doc])
 
+AC_CHECK_PROGS([HELP2MAN], [help2man], [$am_aux_dir/missing help2man])
+
 AC_PROG_CXX
 
 if test "x$GXX" = xyes; then
