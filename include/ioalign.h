@@ -292,7 +292,8 @@ namespace io
         template<typename O>
         friend class basic_align;
 
-        basic_align_proxy(stream_type &os, Align& a);
+        basic_align_proxy(stream_type &os, Align& a,
+                          char_type fill_char, char_type sep_char, char_type rule_char);
 
         template<typename A>
         friend
@@ -325,7 +326,8 @@ namespace io
         typedef std::basic_string<char_type, traits_type> string_type;
 
         proxy_type
-        attach(stream_type& os);
+        attach(stream_type& os,
+               char_type fill_char = ' ', char_type sep_char = ' ', char_type rule_char = '-');
 
         basic_align();
 
@@ -771,16 +773,19 @@ namespace io
 
 
     template<typename Align>
-    basic_align_proxy<Align>::basic_align_proxy(typename Align::stream_type& os, Align& a)
+    basic_align_proxy<Align>::basic_align_proxy(typename Align::stream_type& os, Align& a,
+                                                typename basic_align_proxy<Align>::char_type f,
+                                                typename basic_align_proxy<Align>::char_type s,
+                                                typename basic_align_proxy<Align>::char_type r)
         : os_(os), a_(a), col_(0), cursor_(0),
           last_pos_(0),
           at_begin_(true),
           prev_locale_(os.imbue(std::locale(os.getloc(),
                                             new ocounter<pos_type, char_type,
                                             typename stream_type::traits_type::state_type>(cursor_)))),
-          fill_char_(' '),
-          sep_char_(' '),
-          rule_char_('-')
+          fill_char_(f),
+          sep_char_(s),
+          rule_char_(r)
     {
     }
 
@@ -817,15 +822,15 @@ namespace io
         return *this;
     }
 
-    template<typename OStream>
-    typename basic_align<OStream>::proxy_type
-    basic_align<OStream>::attach(OStream& os)
+    template<typename O>
+    typename basic_align<O>::proxy_type
+    basic_align<O>::attach(O& os, typename O::char_type f, typename O::char_type s, typename O::char_type r)
     {
-        return proxy_type(os, *this);
+        return proxy_type(os, *this, f, s, r);
     }
 
-    template<typename OStream>
-    basic_align<OStream>::basic_align()
+    template<typename O>
+    basic_align<O>::basic_align()
         : widths_(), heads_()
     {
     }
