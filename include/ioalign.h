@@ -277,6 +277,8 @@ namespace io
         void setsep(char_type sep = ' ');
         /// Set the horizontal rule character.
         void setrule(char_type rule = '-');
+        /// Set the column separator character on raw input.
+        void setrawsep(char_type tab = '\t');
     private:
         stream_type& os_;
         Align&       a_;
@@ -288,12 +290,16 @@ namespace io
         char_type    fill_char_;
         char_type    sep_char_;
         char_type    rule_char_;
+        char_type    tab_char_;
 
         template<typename O>
         friend class basic_align;
 
         basic_align_proxy(stream_type &os, Align& a,
-                          char_type fill_char, char_type sep_char, char_type rule_char);
+                          char_type fill_char,
+                          char_type sep_char,
+                          char_type rule_char,
+                          char_type tab_char);
 
         template<typename A>
         friend
@@ -327,7 +333,10 @@ namespace io
 
         proxy_type
         attach(stream_type& os,
-               char_type fill_char = ' ', char_type sep_char = ' ', char_type rule_char = '-');
+               char_type fill_char = ' ',
+               char_type sep_char = ' ',
+               char_type rule_char = '-',
+               char_type tab_char = '\t');
 
         basic_align();
 
@@ -367,6 +376,12 @@ namespace io
     void basic_align_proxy<A>::setrule(typename basic_align_proxy<A>::char_type rule_char)
     {
         rule_char_ = rule_char;
+    }
+
+    template<typename A>
+    void basic_align_proxy<A>::setrawsep(typename basic_align_proxy<A>::char_type tab_char)
+    {
+        tab_char_ = tab_char;
     }
 
     template<typename A>
@@ -565,7 +580,7 @@ namespace io
 
         for (laststart = 0, i = 0; s[i] != '\0'; ++i)
         {
-            if (s[i] != '\t' && s[i] != '\n')
+            if (s[i] != tab_char_ && s[i] != '\n')
                 continue;
 
             sethead(s + laststart, i - laststart, i - laststart);
@@ -587,7 +602,7 @@ namespace io
 
         for (laststart = 0, i = 0; s[i] != '\0'; ++i)
         {
-            if (s[i] != '\t' && s[i] != '\n')
+            if (s[i] != tab_char_ && s[i] != '\n')
                 continue;
 
             os_.write(s + laststart, i - laststart);
@@ -776,7 +791,8 @@ namespace io
     basic_align_proxy<Align>::basic_align_proxy(typename Align::stream_type& os, Align& a,
                                                 typename basic_align_proxy<Align>::char_type f,
                                                 typename basic_align_proxy<Align>::char_type s,
-                                                typename basic_align_proxy<Align>::char_type r)
+                                                typename basic_align_proxy<Align>::char_type r,
+                                                typename basic_align_proxy<Align>::char_type t)
         : os_(os), a_(a), col_(0), cursor_(0),
           last_pos_(0),
           at_begin_(true),
@@ -785,7 +801,8 @@ namespace io
                                             typename stream_type::traits_type::state_type>(cursor_)))),
           fill_char_(f),
           sep_char_(s),
-          rule_char_(r)
+          rule_char_(r),
+          tab_char_(t)
     {
     }
 
@@ -824,9 +841,13 @@ namespace io
 
     template<typename O>
     typename basic_align<O>::proxy_type
-    basic_align<O>::attach(O& os, typename O::char_type f, typename O::char_type s, typename O::char_type r)
+    basic_align<O>::attach(O& os,
+                           typename O::char_type f,
+                           typename O::char_type s,
+                           typename O::char_type r,
+                           typename O::char_type t)
     {
-        return proxy_type(os, *this, f, s, r);
+        return proxy_type(os, *this, f, s, r, t);
     }
 
     template<typename O>
